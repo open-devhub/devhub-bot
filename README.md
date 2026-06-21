@@ -11,7 +11,6 @@
 `devhub-bot` is a GitHub Bot designed to automate the boring stuff within the DevHub Organization. Built on the powerful [Probot](https://probot.github.io/) framework, this bot acts as a GitHub App, listening for specific events and performing predefined actions to enhance collaboration, enforce best practices, and reduce manual overhead for repository maintainers and contributors.
 
 ## Features 🚀
-
 - **Event-Driven Automation**: Listens to GitHub webhook events (e.g., issues opened, pull requests created, comments) and triggers custom actions.
 - **Probot Framework**: Built on Probot, providing a robust and extensible foundation for GitHub App development.
 - **TypeScript Support**: Developed with TypeScript for type safety, improved maintainability, and better developer experience.
@@ -20,6 +19,7 @@
 - **Automated Testing**: Utilizes Vitest for fast unit and integration testing of bot logic.
 - **Vercel Deployment Ready**: Configuration for serverless deployment on Vercel, ideal for a GitHub App.
 - **Modular Design**: Logic organized within the `src` directory, promoting clear separation of concerns.
+- **Super-Linter Integration**: Checks code formatting on PRs using super-linter.
 
 ## Tech Stack 🛠️
 
