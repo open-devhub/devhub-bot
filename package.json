@@ -12,7 +12,7 @@
     "probot-app"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp src/index.html dist",
     "start": "probot run ./dist/index.js",
     "dev": "tsc && probot run ./dist/index.js",
     "test": "vitest",

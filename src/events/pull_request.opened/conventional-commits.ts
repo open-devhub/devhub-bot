@@ -48,7 +48,7 @@ export default async (context: Context<"pull_request.opened">) => {
     "> `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`",
     "",
     "> [!NOTE]",
-    "> This is a friendly and will **not block** the PR from being merged.",
+    "> This is just a friendly reminder and will **not block** the PR from being merged.",
     "",
   ].join("\n");
 
