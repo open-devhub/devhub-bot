@@ -4,7 +4,7 @@
   "private": true,
   "description": "GitHub app for DevHub organization",
   "author": "Caleb Ephrem",
-  "license": "ISC",
+  "license": "MIT",
   "homepage": "https://github.com/open-devhub",
   "keywords": [
     "probot",
