@@ -31,14 +31,25 @@ export default async (context: Context<"pull_request.opened">) => {
   if (problems.length === 0) return;
 
   const body = [
-    "⚠️ **Conventional Commits check**",
+    "> [!WARNING]",
+    "> Some commit messages in this PR do not follow the **Conventional Commits** specification.",
+    ">",
+    "> Expected format: `type(scope): description`",
     "",
-    "Some titles/commits in this PR don't follow [Conventional Commits](https://www.conventionalcommits.org/) format (`type(scope): description`):",
+    "<details>",
+    "<summary><strong>📋 Invalid commit messages</strong></summary>",
     "",
     ...problems.map((p) => `- ${p}`),
     "",
-    "_Valid types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert_",
-    "_This is a warning only — it won't block the PR._",
+    "</details>",
+    "",
+    "> [!TIP]",
+    "> **Valid types:**",
+    "> `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`",
+    "",
+    "> [!NOTE]",
+    "> This is a friendly and will **not block** the PR from being merged.",
+    "",
   ].join("\n");
 
   await context.octokit.rest.issues.createComment(context.issue({ body }));
