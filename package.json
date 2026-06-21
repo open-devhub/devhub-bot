@@ -1,0 +1,39 @@
+{
+  "name": "devhub-bot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GitHub app for DevHub organization",
+  "author": "Caleb Ephrem",
+  "license": "ISC",
+  "homepage": "https://github.com/open-devhub",
+  "keywords": [
+    "probot",
+    "github",
+    "probot-app"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "start": "probot run ./dist/index.js",
+    "dev": "tsc && probot run ./dist/index.js",
+    "test": "vitest",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "probot": "^14.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "ioredis": "^5.10.1",
+    "nock": "^14.0.5",
+    "smee-client": "^5.0.0",
+    "vitest": "^3.2.4",
+    "typescript": "^6.0.3"
+  },
+  "overrides": {
+    "@types/pg": "8.15.1"
+  },
+  "engines": {
+    "node": "^20.18.1 || >= 22"
+  },
+  "type": "module"
+}
