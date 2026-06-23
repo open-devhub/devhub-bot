@@ -32,7 +32,7 @@ export default async (context: Context<"pull_request.opened">) => {
 
   const body = [
     "> [!WARNING]",
-    "> Some commit messages in this PR do not follow the [**Conventional Commits**](https://conventionalcommits.org/) specification.",
+    "> Some commit messages in this PR do not follow the **Conventional Commits** specification.",
     ">",
     "> Expected format: `type(scope): description`",
     "",
