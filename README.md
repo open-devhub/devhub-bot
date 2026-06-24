@@ -104,6 +104,7 @@ For local development, you'll need to use `smee-client` to forward webhooks from
     WEBHOOK_SECRET=<YOUR_WEBHOOK_SECRET>
     NODE_ENV=development
     ```
+
     - **`PRIVATE_KEY`**: If your private key is long, you can put the actual multiline content within double quotes, or point to the file: `PRIVATE_KEY_PATH=/path/to/your/private-key.pem`.
     - **Important**: For local development, make sure your GitHub App's webhook URL is set to your Smee.io URL.
 

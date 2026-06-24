@@ -23,7 +23,7 @@ export default async (context: Context<"pull_request.opened">) => {
     const message = commit.commit.message.split("\n")[0];
     if (!parseConventionalCommit(message)) {
       problems.push(
-        `Commit [\`${commit.sha.slice(0, 7)}\`](https://github.com/${owner}/${repo}/commit/${commit.sha}) does not follow Conventional Commits: \`${message}\``,
+        `Commit https://github.com/${owner}/${repo}/commit/${commit.sha} does not follow Conventional Commits: \`${message}\``,
       );
     }
   }
