@@ -12,22 +12,24 @@
     "probot-app"
   ],
   "scripts": {
-    "build": "tsc && cp src/index.html dist",
+    "build": "tsup && cp src/index.html dist && cp -R src/templates dist",
     "start": "probot run ./dist/index.js",
-    "dev": "tsc && probot run ./dist/index.js",
+    "dev": "npm run build && probot run ./dist/index.js",
     "test": "vitest",
     "deploy": "vercel --prod"
   },
   "dependencies": {
-    "probot": "^14.3.2"
+    "probot": "^14.3.2",
+    "unique-custom-id": "^3.3.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
     "ioredis": "^5.10.1",
     "nock": "^14.0.5",
     "smee-client": "^5.0.0",
-    "vitest": "^3.2.4",
-    "typescript": "^6.0.3"
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3",
+    "vitest": "^3.2.4"
   },
   "overrides": {
     "@types/pg": "8.15.1"
