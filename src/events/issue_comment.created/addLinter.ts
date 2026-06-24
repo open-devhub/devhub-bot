@@ -26,12 +26,32 @@ async function fileExists(
 }
 
 export default async (context: Context<"issue_comment.created">) => {
-  if (!context.payload.issue.pull_request) return;
-
   const body = context.payload.comment.body.trim();
-  if (body.toLowerCase() !== "!addlinter") return;
+
+  if (!body.startsWith("!addlinter")) return;
 
   const { owner, repo } = context.repo();
+  const username = context.payload.sender.login;
+
+  const { data: permission } =
+    await context.octokit.rest.repos.getCollaboratorPermissionLevel({
+      owner,
+      repo,
+      username,
+    });
+
+  const allowed = ["admin", "maintain"];
+
+  if (!allowed.includes(permission.permission)) {
+    await context.octokit.rest.issues.createComment({
+      owner,
+      repo,
+      issue_number: context.payload.issue.number,
+      body: "❌ You must be a repository administrator to use this command.",
+    });
+
+    return;
+  }
 
   for (const path of LINT_WORKFLOW_PATHS) {
     if (await fileExists(context, owner, repo, path)) {
