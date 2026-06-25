@@ -97,6 +97,6 @@ async function resolvePullNumber(
     head: `${owner}:${headBranch}`,
   });
 
-  const match = prs.find((pr) => pr.head.sha === headSha) ?? prs[0];
+  const match = prs.find((pr) => pr.head.sha === headSha);
   return match?.number ?? null;
 }
