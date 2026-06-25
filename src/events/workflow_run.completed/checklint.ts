@@ -12,19 +12,22 @@ export default async (context: Context<"workflow_run.completed">) => {
   const { owner, repo } = context.repo();
   const workflowRun = context.payload.workflow_run;
 
+  const pull_number = await resolvePullNumber(
+    context,
+    workflowRun,
+    owner,
+    repo,
+  );
+  if (!pull_number) return;
+
   if (workflowRun.conclusion === "success") {
-    const pullRequests = workflowRun.pull_requests as Array<{ number: number }>;
-    if (!pullRequests || pullRequests.length === 0) return;
-
-    const pull_number = pullRequests[0].number;
-
     const body = [
       "> [!NOTE]",
       "> Linting checks passed successfully 🎉",
       "",
       "All formatting and code quality checks are clean.",
       "",
-      "You’re good to merge 🚀",
+      "You're good to merge 🚀",
     ].join("\n");
 
     await context.octokit.rest.issues.createComment({
@@ -36,13 +39,6 @@ export default async (context: Context<"workflow_run.completed">) => {
 
     return;
   }
-
-  // Find the PR associated with this workflow run
-  const pullRequests = workflowRun.pull_requests as Array<{ number: number }>;
-
-  if (!pullRequests || pullRequests.length === 0) return;
-
-  const pull_number = pullRequests[0].number;
 
   const logsUrl = `https://github.com/${owner}/${repo}/actions/runs/${workflowRun.id}`;
 
@@ -77,3 +73,30 @@ export default async (context: Context<"workflow_run.completed">) => {
     body,
   });
 };
+
+async function resolvePullNumber(
+  context: Context<"workflow_run.completed">,
+  workflowRun: Context<"workflow_run.completed">["payload"]["workflow_run"],
+  owner: string,
+  repo: string,
+): Promise<number | null> {
+  const directPRs = workflowRun.pull_requests as Array<{ number: number }>;
+  if (directPRs?.length > 0) {
+    return directPRs[0].number;
+  }
+
+  const headBranch = workflowRun.head_branch;
+  const headSha = workflowRun.head_sha;
+
+  if (!headBranch) return null;
+
+  const { data: prs } = await context.octokit.rest.pulls.list({
+    owner,
+    repo,
+    state: "open",
+    head: `${owner}:${headBranch}`,
+  });
+
+  const match = prs.find((pr) => pr.head.sha === headSha);
+  return match?.number ?? null;
+}
