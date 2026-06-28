@@ -10,9 +10,6 @@ const LINT_WORKFLOW_NAMES = new Set([
   "code quality",
 ]);
 
-const PULLS_PER_PAGE = 100;
-const MAX_PAGES = 10;
-
 export default async (context: WorkflowRunContext): Promise<void> => {
   const workflowName =
     context.payload.workflow_run.name?.toLowerCase().trim() ?? "";
@@ -115,7 +112,6 @@ async function resolvePullNumber(
       repo,
       state: "open",
       head: `${owner}:${headBranch}`,
-      per_page: PULLS_PER_PAGE,
     });
 
     const sameRepoMatch = samePRs.find((pr) => pr.head.sha === headSha);
@@ -127,28 +123,15 @@ async function resolvePullNumber(
   }
 
   try {
-    for (let page = 1; page <= MAX_PAGES; page++) {
-      const { data: prs } = await context.octokit.rest.pulls.list({
-        owner,
-        repo,
-        state: "open",
-        per_page: PULLS_PER_PAGE,
-        page,
-      });
+    const { data: prs } = await context.octokit.rest.pulls.list({
+      owner,
+      repo,
+      state: "open",
+      per_page: 30,
+    });
 
-      if (prs.length === 0) {
-        break;
-      }
-
-      const forkMatch = prs.find((pr) => pr.head.sha === headSha);
-      if (forkMatch) {
-        return forkMatch.number;
-      }
-
-      if (prs.length < PULLS_PER_PAGE) {
-        break;
-      }
-    }
+    const forkMatch = prs.find((pr) => pr.head.sha === headSha);
+    return forkMatch?.number ?? null;
   } catch (err) {
     context.log.warn(`[lint-bot] Fork PR lookup failed: ${String(err)}`);
   }
