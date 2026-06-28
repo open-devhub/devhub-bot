@@ -1,48 +1,67 @@
 import { Context } from "probot";
 
-export default async (context: Context<"workflow_run.completed">) => {
-  const lintWorkflows = ["lint", "super-linter", "lint check", "code quality"];
+type WorkflowRunContext = Context<"workflow_run.completed">;
+type WorkflowRun = WorkflowRunContext["payload"]["workflow_run"];
 
-  const workflowName = context.payload.workflow_run.name?.toLowerCase() ?? "";
+const LINT_WORKFLOW_NAMES = new Set([
+  "lint",
+  "super-linter",
+  "lint check",
+  "code quality",
+]);
 
-  if (!lintWorkflows.includes(workflowName)) {
+export default async (context: WorkflowRunContext): Promise<void> => {
+  const workflowName =
+    context.payload.workflow_run.name?.toLowerCase().trim() ?? "";
+
+  if (!LINT_WORKFLOW_NAMES.has(workflowName)) {
     return;
   }
 
   const { owner, repo } = context.repo();
   const workflowRun = context.payload.workflow_run;
 
-  const pull_number = await resolvePullNumber(
-    context,
-    workflowRun,
-    owner,
-    repo,
-  );
-  if (!pull_number) return;
-
-  if (workflowRun.conclusion === "success") {
-    const body = [
-      "> [!NOTE]",
-      "> Linting checks passed successfully 🎉",
-      "",
-      "All formatting and code quality checks are clean.",
-      "",
-      "You're good to merge 🚀",
-    ].join("\n");
-
-    await context.octokit.rest.issues.createComment({
-      owner,
-      repo,
-      issue_number: pull_number,
-      body,
-    });
-
+  const pullNumber = await resolvePullNumber(context, workflowRun, owner, repo);
+  if (pullNumber === null) {
+    context.log.info(
+      `[lint-bot] Could not resolve a PR for workflow run ${workflowRun.id} ` +
+        `(branch: ${workflowRun.head_branch ?? "unknown"}, sha: ${workflowRun.head_sha}). Skipping.`,
+    );
     return;
   }
 
-  const logsUrl = `https://github.com/${owner}/${repo}/actions/runs/${workflowRun.id}`;
+  const body =
+    workflowRun.conclusion === "success"
+      ? buildSuccessComment()
+      : buildFailureComment(owner, repo, workflowRun.id);
 
-  const body = [
+  await context.octokit.rest.issues.createComment({
+    owner,
+    repo,
+    issue_number: pullNumber,
+    body,
+  });
+};
+
+function buildSuccessComment(): string {
+  return [
+    "> [!NOTE]",
+    "> Linting checks passed successfully 🎉",
+    "",
+    "All formatting and code quality checks are clean.",
+    "",
+    "You're good to merge 🚀",
+  ].join("\n");
+}
+
+function buildFailureComment(
+  owner: string,
+  repo: string,
+  runId: number,
+): string {
+  const logsUrl = `https://github.com/${owner}/${repo}/actions/runs/${runId}`;
+
+  return [
     "> [!WARNING]",
     "> Linting checks did not pass for this PR.",
     ">",
@@ -65,38 +84,57 @@ export default async (context: Context<"workflow_run.completed">) => {
     "> This is just a friendly reminder and will **not block** the PR from being merged.",
     "",
   ].join("\n");
-
-  await context.octokit.rest.issues.createComment({
-    owner,
-    repo,
-    issue_number: pull_number,
-    body,
-  });
-};
+}
 
 async function resolvePullNumber(
-  context: Context<"workflow_run.completed">,
-  workflowRun: Context<"workflow_run.completed">["payload"]["workflow_run"],
+  context: WorkflowRunContext,
+  workflowRun: WorkflowRun,
   owner: string,
   repo: string,
 ): Promise<number | null> {
-  const directPRs = workflowRun.pull_requests as Array<{ number: number }>;
-  if (directPRs?.length > 0) {
+  const headSha: string = workflowRun.head_sha;
+  const headBranch: string | null = workflowRun.head_branch ?? null;
+
+  const directPRs = workflowRun.pull_requests as Array<{
+    number: number;
+  }> | null;
+  if (directPRs && directPRs.length > 0) {
     return directPRs[0].number;
   }
 
-  const headBranch = workflowRun.head_branch;
-  const headSha = workflowRun.head_sha;
+  if (!headBranch) {
+    return null;
+  }
 
-  if (!headBranch) return null;
+  try {
+    const { data: samePRs } = await context.octokit.rest.pulls.list({
+      owner,
+      repo,
+      state: "open",
+      head: `${owner}:${headBranch}`,
+    });
 
-  const { data: prs } = await context.octokit.rest.pulls.list({
-    owner,
-    repo,
-    state: "open",
-    head: `${owner}:${headBranch}`,
-  });
+    const sameRepoMatch = samePRs.find((pr) => pr.head.sha === headSha);
+    if (sameRepoMatch) {
+      return sameRepoMatch.number;
+    }
+  } catch (err) {
+    context.log.warn(`[lint-bot] Same-repo PR lookup failed: ${String(err)}`);
+  }
 
-  const match = prs.find((pr) => pr.head.sha === headSha);
-  return match?.number ?? null;
+  try {
+    const { data: prs } = await context.octokit.rest.pulls.list({
+      owner,
+      repo,
+      state: "open",
+      per_page: 30,
+    });
+
+    const forkMatch = prs.find((pr) => pr.head.sha === headSha);
+    return forkMatch?.number ?? null;
+  } catch (err) {
+    context.log.warn(`[lint-bot] Fork PR lookup failed: ${String(err)}`);
+  }
+
+  return null;
 }
