@@ -1,9 +1,9 @@
 import { COMMIT_TYPE_LABELS } from "../../config/commitTypeLabels.js";
-import { defineEventHandler } from "../../lib/eventHandler.js";
+import { defineEvent } from "../../lib/eventHandler.js";
 import { parseConventionalCommit } from "../../utils/conventionalCommit.js";
 import { ensureLabelExists } from "../../utils/ensureLabel.js";
 
-export default defineEventHandler({
+export default defineEvent({
   events: ["pull_request.opened"],
   callback: async (context) => {
     const { owner, repo } = context.repo();

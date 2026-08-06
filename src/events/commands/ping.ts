@@ -1,6 +1,6 @@
-import { defineEventHandler } from "../../lib/eventHandler.js";
+import { defineEvent } from "../../lib/eventHandler.js";
 
-export default defineEventHandler({
+export default defineEvent({
   events: ["issue_comment.created"],
   callback: async (context) => {
     const body = context.payload.comment.body?.trim().toLowerCase();

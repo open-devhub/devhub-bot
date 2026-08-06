@@ -3,7 +3,7 @@ import { dirname, join } from "path";
 import { Context } from "probot";
 import ucid from "unique-custom-id";
 import { fileURLToPath } from "url";
-import { defineEventHandler } from "../../lib/eventHandler.js";
+import { defineEvent } from "../../lib/eventHandler.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -26,7 +26,7 @@ async function fileExists(
   }
 }
 
-export default defineEventHandler({
+export default defineEvent({
   events: ["issue_comment.created"],
   callback: async (context) => {
     const body = context.payload.comment.body.trim();

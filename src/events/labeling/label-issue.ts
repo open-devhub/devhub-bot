@@ -1,9 +1,9 @@
 import { ISSUE_LABEL_RULES } from "../../config/issueLabelRules.js";
-import { defineEventHandler } from "../../lib/eventHandler.js";
+import { defineEvent } from "../../lib/eventHandler.js";
 import { ensureLabelExists } from "../../utils/ensureLabel.js";
 import { titleMatchesKeyword } from "../../utils/textMatch.js";
 
-export default defineEventHandler({
+export default defineEvent({
   events: ["issues.opened"],
   callback: async (context) => {
     const { title } = context.payload.issue;

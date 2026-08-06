@@ -1,5 +1,5 @@
 import { Context } from "probot";
-import { defineEventHandler } from "../../lib/eventHandler.js";
+import { defineEvent } from "../../lib/eventHandler.js";
 
 type WorkflowRunContext = Context<"workflow_run.completed">;
 type WorkflowRun = WorkflowRunContext["payload"]["workflow_run"];
@@ -11,7 +11,7 @@ const LINT_WORKFLOW_NAMES = new Set([
   "code quality",
 ]);
 
-export default defineEventHandler({
+export default defineEvent({
   events: ["workflow_run.completed"],
   callback: async (context) => {
     const workflowName =

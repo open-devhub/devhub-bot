@@ -1,7 +1,7 @@
-import { defineEventHandler } from "../../lib/eventHandler.js";
+import { defineEvent } from "../../lib/eventHandler.js";
 import { parseConventionalCommit } from "../../utils/conventionalCommit.js";
 
-export default defineEventHandler({
+export default defineEvent({
   events: ["pull_request.opened"],
   callback: async (context) => {
     const { owner, repo } = context.repo();

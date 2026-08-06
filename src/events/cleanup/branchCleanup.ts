@@ -1,6 +1,6 @@
-import { defineEventHandler } from "../../lib/eventHandler.js";
+import { defineEvent } from "../../lib/eventHandler.js";
 
-export default defineEventHandler({
+export default defineEvent({
   events: ["pull_request.closed"],
   callback: async (context) => {
     if (!context.payload.pull_request.merged) return;
