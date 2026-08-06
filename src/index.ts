@@ -2,37 +2,52 @@ import fsp from "fs/promises";
 import path from "path";
 import { Probot } from "probot";
 import { fileURLToPath } from "url";
+import { EventHandlerModule } from "./types/eventHandler.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+async function collectHandlerFiles(dir: string): Promise<string[]> {
+  const entries = await fsp.readdir(dir, { withFileTypes: true });
+  const files: string[] = [];
+
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+
+    if (entry.isDirectory()) {
+      files.push(...(await collectHandlerFiles(fullPath)));
+      continue;
+    }
+
+    if (entry.name.endsWith(".js") && !entry.name.endsWith(".d.ts")) {
+      files.push(fullPath);
+    }
+  }
+
+  return files;
+}
+
 export default async (app: Probot) => {
   const eventsDir = path.join(__dirname, "events");
-  const eventNames = await fsp.readdir(eventsDir);
+  const handlerFiles = await collectHandlerFiles(eventsDir);
 
-  for (const eventName of eventNames) {
-    const eventDirPath = path.join(eventsDir, eventName);
-    const stat = await fsp.stat(eventDirPath);
-    if (!stat.isDirectory()) continue;
+  for (const handlerPath of handlerFiles) {
+    const mod = await import(handlerPath);
+    const handler: EventHandlerModule | undefined = mod.default;
+    const relPath = path.relative(eventsDir, handlerPath);
 
-    const handlerFiles = (await fsp.readdir(eventDirPath)).filter(
-      (file) => file.endsWith(".js") && !file.endsWith(".d.ts"),
-    );
+    if (
+      !handler ||
+      typeof handler.callback !== "function" ||
+      !Array.isArray(handler.events)
+    ) {
+      app.log.warn(`[WARN] Skipped ${relPath}: missing events[] or callback()`);
+      continue;
+    }
 
-    for (const file of handlerFiles) {
-      const handlerPath = path.join(eventDirPath, file);
-      const mod = await import(handlerPath);
-      const handler = mod.default;
-
-      if (typeof handler !== "function") {
-        app.log.warn(
-          `[WARN] Skipped ${eventName}/${file}: no default export function`,
-        );
-        continue;
-      }
-
-      app.on(eventName as any, handler);
-      app.log.info(`Registered: ${eventName} → ${file}`);
+    for (const eventName of handler.events) {
+      app.on(eventName, handler.callback);
+      app.log.info(`[SUCCESS] Registered: ${eventName} -- ${relPath}`);
     }
   }
 };

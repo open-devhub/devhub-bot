@@ -1,4 +1,5 @@
 import { Context } from "probot";
+import { defineEvent } from "../../lib/eventHandler.js";
 
 type WorkflowRunContext = Context<"workflow_run.completed">;
 type WorkflowRun = WorkflowRunContext["payload"]["workflow_run"];
@@ -10,38 +11,46 @@ const LINT_WORKFLOW_NAMES = new Set([
   "code quality",
 ]);
 
-export default async (context: WorkflowRunContext): Promise<void> => {
-  const workflowName =
-    context.payload.workflow_run.name?.toLowerCase().trim() ?? "";
+export default defineEvent({
+  events: ["workflow_run.completed"],
+  callback: async (context) => {
+    const workflowName =
+      context.payload.workflow_run.name?.toLowerCase().trim() ?? "";
 
-  if (!LINT_WORKFLOW_NAMES.has(workflowName)) {
-    return;
-  }
+    if (!LINT_WORKFLOW_NAMES.has(workflowName)) {
+      return;
+    }
 
-  const { owner, repo } = context.repo();
-  const workflowRun = context.payload.workflow_run;
+    const { owner, repo } = context.repo();
+    const workflowRun = context.payload.workflow_run;
 
-  const pullNumber = await resolvePullNumber(context, workflowRun, owner, repo);
-  if (pullNumber === null) {
-    context.log.info(
-      `[lint-bot] Could not resolve a PR for workflow run ${workflowRun.id} ` +
-        `(branch: ${workflowRun.head_branch ?? "unknown"}, sha: ${workflowRun.head_sha}). Skipping.`,
+    const pullNumber = await resolvePullNumber(
+      context,
+      workflowRun,
+      owner,
+      repo,
     );
-    return;
-  }
+    if (pullNumber === null) {
+      context.log.info(
+        `[LINTER] Could not resolve a PR for workflow run ${workflowRun.id} ` +
+          `(branch: ${workflowRun.head_branch ?? "unknown"}, sha: ${workflowRun.head_sha}). Skipping.`,
+      );
+      return;
+    }
 
-  const body =
-    workflowRun.conclusion === "success"
-      ? buildSuccessComment()
-      : buildFailureComment(owner, repo, workflowRun.id);
+    const body =
+      workflowRun.conclusion === "success"
+        ? buildSuccessComment()
+        : buildFailureComment(owner, repo, workflowRun.id);
 
-  await context.octokit.rest.issues.createComment({
-    owner,
-    repo,
-    issue_number: pullNumber,
-    body,
-  });
-};
+    await context.octokit.rest.issues.createComment({
+      owner,
+      repo,
+      issue_number: pullNumber,
+      body,
+    });
+  },
+});
 
 function buildSuccessComment(): string {
   return [
@@ -119,7 +128,7 @@ async function resolvePullNumber(
       return sameRepoMatch.number;
     }
   } catch (err) {
-    context.log.warn(`[lint-bot] Same-repo PR lookup failed: ${String(err)}`);
+    context.log.warn(`[LINTER] Same-repo PR lookup failed: ${String(err)}`);
   }
 
   try {
@@ -133,7 +142,7 @@ async function resolvePullNumber(
     const forkMatch = prs.find((pr) => pr.head.sha === headSha);
     return forkMatch?.number ?? null;
   } catch (err) {
-    context.log.warn(`[lint-bot] Fork PR lookup failed: ${String(err)}`);
+    context.log.warn(`[LINTER] Fork PR lookup failed: ${String(err)}`);
   }
 
   return null;
